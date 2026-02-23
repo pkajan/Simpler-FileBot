@@ -4,12 +4,13 @@ import sys
 from PySide6.QtCore import Slot, QCoreApplication, QProcess, QUrl
 from PySide6.QtGui import QGuiApplication, Qt, QDesktopServices
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QComboBox, QPushButton, QMessageBox, QListWidget, \
-    QHBoxLayout, QToolButton, QStyle, QFileDialog, QListWidgetItem
+    QHBoxLayout, QToolButton, QStyle, QFileDialog, QListWidgetItem, QLineEdit
 
 from backend.api_key_config import delete_and_recreate_api_keys_file
 from backend.settings_backend import (retrieve_theme_from_settings, save_new_theme_to_settings, add_excluded_folder,
                                       retrieve_excluded_folders, remove_excluded_folder,
-                                      delete_and_recreate_settings_file, get_settings_file_path)
+                                      delete_and_recreate_settings_file, get_settings_file_path,
+                                      retrieve_lang, save_new_lang)
 
 
 def set_color_theme_on_startup():
@@ -64,6 +65,16 @@ class SettingsPage(QWidget):
         folder_exclusion_button_layout.addWidget(add_folders_button)
         folder_exclusion_button_layout.addWidget(delete_folder_button)
 
+        # --- Language Selection UI ---
+        language_label = QLabel("Preferred Language (ISO 639-1):")
+        self.lang_edit = QLineEdit()
+        self.lang_edit.setPlaceholderText("e.g., sk, cs, en, fr")
+        self.lang_edit.setText(retrieve_lang())
+
+        # Language save button
+        lang_update_button = QPushButton("Update Language")
+        lang_update_button.clicked.connect(self.save_lang)
+
         # Opens the settings folder when clicked.
         open_settings_button = QPushButton("📁 Open Settings Folder")
         open_settings_button.clicked.connect(self.open_settings_folder)
@@ -81,6 +92,10 @@ class SettingsPage(QWidget):
         settings_page_layout.addWidget(folder_exclusion_label)
         settings_page_layout.addWidget(self.folder_exclusion_list)
         settings_page_layout.addLayout(folder_exclusion_button_layout)
+        settings_page_layout.addStretch()
+        settings_page_layout.addWidget(language_label)
+        settings_page_layout.addWidget(self.lang_edit)
+        settings_page_layout.addWidget(lang_update_button)
         settings_page_layout.addStretch()
         settings_page_layout.addWidget(open_settings_button)
         settings_page_layout.addWidget(reset_button)
@@ -167,3 +182,11 @@ class SettingsPage(QWidget):
 
         for folder in retrieve_excluded_folders():
             self.folder_exclusion_list.addItem(QListWidgetItem(folder))
+
+    @Slot()
+    def save_lang(self):
+        new_lang = self.lang_edit.text().strip().lower()
+        if not new_lang:
+            new_lang = "en"
+
+        save_new_lang(new_lang)

@@ -1,9 +1,9 @@
 import tmdbsimple as tmdb
 
 from backend.api_key_config import retrieve_the_movie_db_key
+from backend.settings_backend import retrieve_lang
 from backend.media_record import MediaRecord
 from databases.database import Database, retrieve_episode_name_from_episode_lookup
-
 
 class TheMovieDBPythonDB(Database):
     """
@@ -16,6 +16,8 @@ class TheMovieDBPythonDB(Database):
     def __init__(self, media_records: list[MediaRecord], is_tv_series: bool = False):
         super().__init__(media_records, is_tv_series)
 
+        self.language = retrieve_lang()
+
         # Timeout for connect & request after 5 seconds.
         tmdb.REQUESTS_TIMEOUT = 5
 
@@ -27,7 +29,7 @@ class TheMovieDBPythonDB(Database):
 
         if self.is_tv_series:
             # MediaRecord Episode Match.
-            possible_listings: dict = tmdb.Search().tv(query=self.media_records[0].title).get("results", "")
+            possible_listings: dict = tmdb.Search().tv(query=self.media_records[0].title, language=self.language).get("results", "")
 
             if len(possible_listings) == 0:
                 return [None] * len(self.media_records)
@@ -41,14 +43,14 @@ class TheMovieDBPythonDB(Database):
 
             episode_lookup = _create_episode_lookup(selected_listing.get("id"),
                                                     MediaRecord.get_all_season_numbers(self.media_records),
-                                                    self.media_records[0].is_absolute_order)
+                                                    self.media_records[0].is_absolute_order, self.language)
 
             for media_record in self.media_records:
                 matched_titles.append(retrieve_episode_name_from_episode_lookup(media_record, episode_lookup))
         else:
             # MediaRecord Movie Match.
             for media_record in self.media_records:
-                possible_listings: dict = tmdb.Search().movie(query=media_record.title).get("results", "")
+                possible_listings: dict = tmdb.Search().movie(query=media_record.title, language=self.language).get("results", "")
                 target_year: int | None = media_record.year
 
                 if len(possible_listings) == 0:
@@ -75,7 +77,7 @@ class TheMovieDBPythonDB(Database):
             if self.media_records[0].year is not None:
                 return [self.media_records[0].year] * len(self.media_records)
 
-            possible_listings: dict = tmdb.Search().tv(query=self.media_records[0].title).get("results", "")
+            possible_listings: dict = tmdb.Search().tv(query=self.media_records[0].title, language=self.language).get("results", "")
             if len(possible_listings) == 0:
                 return [None] * len(self.media_records)
 
@@ -93,7 +95,7 @@ class TheMovieDBPythonDB(Database):
                 release_years.append(media_record.year)
                 continue
 
-            possible_listings: dict = tmdb.Search().movie(query=media_record.title).get("results", "")
+            possible_listings: dict = tmdb.Search().movie(query=media_record.title, language=self.language).get("results", "")
 
             # In this branch case, the user does not know the year of the series. Just select the first listing.
             listing_date = list(possible_listings)[0].get("release_date", None)
@@ -122,7 +124,7 @@ def _get_release_year_of_listing(listing: dict, identifier_for_year: str) -> int
     return None
 
 
-def _create_episode_lookup(series_id: int, season_numbers: set[int], is_absolute_order: bool) \
+def _create_episode_lookup(series_id: int, season_numbers: set[int], is_absolute_order: bool, language: str) \
         -> dict[(int, int), str]:
     """
     Generate an episode lookup for a series.
@@ -139,7 +141,7 @@ def _create_episode_lookup(series_id: int, season_numbers: set[int], is_absolute
 
         for season_number in range(1, number_of_total_seasons + 1):
             try:
-                response = tmdb.TV_Seasons(series_id, season_number).info()
+                response = tmdb.TV_Seasons(series_id, season_number).info(language=language)
             except IOError:
                 # Skip if the TheMovieDB couldn't find the season info for a particular season.
                 continue
@@ -156,7 +158,7 @@ def _create_episode_lookup(series_id: int, season_numbers: set[int], is_absolute
     else:
         for season_number in season_numbers:
             try:
-                response = tmdb.TV_Seasons(series_id, season_number).info()
+                response = tmdb.TV_Seasons(series_id, season_number).info(language=language)
             except IOError:
                 # Skip if the TheMovieDB couldn't find the season info for a particular season.
                 continue

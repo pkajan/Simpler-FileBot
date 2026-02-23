@@ -64,3 +64,10 @@ def delete_and_recreate_settings_file():
 
 def get_settings_file_path():
     return ensure().path
+
+
+def retrieve_lang() -> str:
+    return _settings_json_config.get("lang", "")
+
+def save_new_lang(api_key: str) -> None:
+    _settings_json_config.set("lang", api_key)
