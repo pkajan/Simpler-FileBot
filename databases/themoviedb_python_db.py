@@ -29,7 +29,8 @@ class TheMovieDBPythonDB(Database):
 
         if self.is_tv_series:
             # MediaRecord Episode Match.
-            possible_listings: dict = tmdb.Search().tv(query=self.media_records[0].title, language=self.language).get("results", "")
+            possible_listings: dict = tmdb.Search().tv(
+                query=self.media_records[0].title, language=self.language).get("results", "")
 
             if len(possible_listings) == 0:
                 return [None] * len(self.media_records)
@@ -50,7 +51,8 @@ class TheMovieDBPythonDB(Database):
         else:
             # MediaRecord Movie Match.
             for media_record in self.media_records:
-                possible_listings: dict = tmdb.Search().movie(query=media_record.title, language=self.language).get("results", "")
+                possible_listings: dict = tmdb.Search().movie(
+                    query=media_record.title, language=self.language).get("results", "")
                 target_year: int | None = media_record.year
 
                 if len(possible_listings) == 0:
@@ -77,7 +79,8 @@ class TheMovieDBPythonDB(Database):
             if self.media_records[0].year is not None:
                 return [self.media_records[0].year] * len(self.media_records)
 
-            possible_listings: dict = tmdb.Search().tv(query=self.media_records[0].title, language=self.language).get("results", "")
+            possible_listings: dict = tmdb.Search().tv(
+                query=self.media_records[0].title, language=self.language).get("results", "")
             if len(possible_listings) == 0:
                 return [None] * len(self.media_records)
 
@@ -95,7 +98,8 @@ class TheMovieDBPythonDB(Database):
                 release_years.append(media_record.year)
                 continue
 
-            possible_listings: dict = tmdb.Search().movie(query=media_record.title, language=self.language).get("results", "")
+            possible_listings: dict = tmdb.Search().movie(
+                query=media_record.title, language=self.language).get("results", "")
 
             # In this branch case, the user does not know the year of the series. Just select the first listing.
             listing_date = list(possible_listings)[0].get("release_date", None)
